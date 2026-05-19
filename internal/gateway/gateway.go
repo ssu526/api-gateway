@@ -11,9 +11,9 @@ type Gateway struct {
 	Proxy           Proxy
 }
 
-func New(router Router, serviceRegistry ServiceRegistry, proxy Proxy) *Gateway {
+func New(port string, router Router, serviceRegistry ServiceRegistry, proxy Proxy) *Gateway {
 	return &Gateway{
-		Port:            ":8080",
+		Port:            port,
 		Router:          router,
 		ServiceRegistry: serviceRegistry,
 		Proxy:           proxy,

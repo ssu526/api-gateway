@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
+	"github.com/ssu526/api-gateway/internal/config"
 	"github.com/ssu526/api-gateway/internal/gateway"
 	"github.com/ssu526/api-gateway/internal/proxy"
 	"github.com/ssu526/api-gateway/internal/router"
@@ -11,28 +13,34 @@ import (
 )
 
 func main() {
-	routes := []router.Route{
-		{
-			Path:        "/api/users",
-			ServiceName: "users-service",
-		},
+	// load config file
+	cfg, err := config.Load("../../internal/config/config.yaml")
+	if err != nil {
+		log.Fatalf("Failed to load config file: %v", err)
 	}
 
-	services := []*service.Service{
-		{
-			Name: "users-service",
-			Urls: []string{"http://localhost:9091"},
-		},
-	}
+	fmt.Println(cfg)
 
+	// build routes
+	routes := router.BuildRoutes(cfg.Router.Routes)
 	r := router.New(routes)
+
+	// Build service registry and proxy
 	serviceReg := service.New()
-	serviceReg.RegisterService(services[0])
 	p := proxy.New()
-	_, _ = p.GetOrCreateProxy("http://localhost:9091")
+	for _, svcCfg := range cfg.ServiceRegistry.Services {
+		svc := &service.Service{
+			Name: svcCfg.Name,
+			Urls: svcCfg.Urls,
+		}
+		for i := 0; i < len(svc.Urls); i++ {
+			p.GetOrCreateProxy(svc.Urls[i])
+		}
+		serviceReg.RegisterService(svc)
+	}
 
-	gw := gateway.New(r, serviceReg, p)
+	gw := gateway.New(cfg.Port, r, serviceReg, p)
 
-	log.Printf("API Gateway booting up on port %s...", ":8080")
+	log.Printf("API Gateway booting up on port %s", cfg.Port)
 	log.Fatal(http.ListenAndServe(gw.Port, gw))
 }

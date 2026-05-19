@@ -1,20 +1,35 @@
-services:
-  - name: users
-    urls:
-      - http://localhost:9001
-      - http://localhost:9002
-  - name: products
-    urls:
-      - http://localhost:9003
-      - http://localhost:9004
+port: ":8080"
 
-routes:
-  - path: /api/users
-    service: users
-    # middleware:
-    #   - auth
-    #   - log
-  - path: /api/products
-    service: products
-    # middleware:
-    #   - log
+router:
+  routes:
+    - path: "/users"
+      service-name: "user-service"
+      methods:
+        - GET
+        - POST
+      middleware:
+        - auth
+        - logging
+
+    - path: "/products"
+      service-name: "product-service"
+      methods:
+        - GET
+      middleware:
+        - logging
+
+service-registry:
+  services:
+    - service: "user-service"
+      urls:
+        - "http://localhost:9091"
+        - "http://localhost:9092"
+    - service: "product-service"
+      urls:
+        - "http://localhost:9093"
+        - "http://localhost:9094"
+
+# proxy:
+#   timeout: "5s"
+#   retires: 3
+#   load-balancer: "round-robin"
