@@ -1,9 +1,11 @@
 package service
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type ServiceRegistry struct {
-	services map[string]*Service
+	services map[string]*Service // [service name, Service instance]
 }
 
 func New() *ServiceRegistry {
@@ -13,8 +15,20 @@ func New() *ServiceRegistry {
 	}
 }
 
-func (s *ServiceRegistry) RegisterService(service *Service) {
+func (s *ServiceRegistry) RegisterService(service *Service) error {
+	if _, exist := s.services[service.Name]; exist {
+		return fmt.Errorf("service already registered: %s", service.Name)
+	}
 	s.services[service.Name] = service
+	return nil
+}
+
+func (s *ServiceRegistry) UpdateService(service *Service) error {
+	if _, exist := s.services[service.Name]; !exist {
+		return fmt.Errorf("service not found: %s", service.Name)
+	}
+	s.services[service.Name] = service
+	return nil
 }
 
 func (s *ServiceRegistry) GetService(serviceName string) (*Service, error) {

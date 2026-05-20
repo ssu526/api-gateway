@@ -28,8 +28,3 @@ service-registry:
       urls:
         - "http://localhost:9093"
         - "http://localhost:9094"
-
-# proxy:
-#   timeout: "5s"
-#   retires: 3
-#   load-balancer: "round-robin"

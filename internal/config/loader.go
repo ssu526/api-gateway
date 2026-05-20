@@ -9,30 +9,33 @@ import (
 	"go.yaml.in/yaml/v2"
 )
 
-var (
-	cfg  *Config
+type Loader struct {
 	once sync.Once
-)
+	cfg  *Config
+	err  error
+}
 
-func Load(filePath string) (*Config, error) {
-	var err error
+func NewLoader() *Loader {
+	return &Loader{}
+}
 
-	once.Do(func() {
-		cfg, err = load(filePath)
+func (l *Loader) Load(filePath string) (*Config, error) {
+	l.once.Do(func() {
+		l.cfg, l.err = load(filePath)
 	})
 
-	return cfg, err
+	return l.cfg, l.err
 }
 
 func load(filePath string) (*Config, error) {
 	file, err := os.ReadFile(filePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read config file: %v", filePath)
+		return nil, fmt.Errorf("Failed to read config file: %s: %w", filePath, err)
 	}
 
 	var config Config
 	if err := yaml.Unmarshal(file, &config); err != nil {
-		return nil, fmt.Errorf("failed to unmarshall yaml: %v", filePath)
+		return nil, fmt.Errorf("Failed to unmarshall yaml: %s: %w", filePath, err)
 	}
 
 	applyDefaults(&config)

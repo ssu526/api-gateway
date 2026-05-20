@@ -2,18 +2,34 @@ package gateway
 
 import (
 	"net/http"
+	"time"
 )
 
 type Gateway struct {
 	Port            string
+	ReadTimeoutMs   time.Duration
+	WriteTimeoutMs  time.Duration
+	IdleTimeoutMs   time.Duration
+	MaxHeaderBytes  int
 	Router          Router
 	ServiceRegistry ServiceRegistry
 	Proxy           Proxy
 }
 
-func New(port string, router Router, serviceRegistry ServiceRegistry, proxy Proxy) *Gateway {
+func New(port string,
+	readTimeoutMs time.Duration,
+	writeTimeoutMs time.Duration,
+	idleTimeoutMs time.Duration,
+	maxHeaderBytes int,
+	router Router,
+	serviceRegistry ServiceRegistry,
+	proxy Proxy) *Gateway {
 	return &Gateway{
 		Port:            port,
+		ReadTimeoutMs:   readTimeoutMs,
+		WriteTimeoutMs:  writeTimeoutMs,
+		IdleTimeoutMs:   idleTimeoutMs,
+		MaxHeaderBytes:  maxHeaderBytes,
 		Router:          router,
 		ServiceRegistry: serviceRegistry,
 		Proxy:           proxy,

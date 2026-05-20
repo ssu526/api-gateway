@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/ssu526/api-gateway/internal/config"
 )
@@ -13,7 +14,6 @@ type Router struct {
 	routes []Route
 }
 
-// Creates a Router with the provided route definitions
 func New(routes []Route) *Router {
 	return &Router{
 		routes: routes,
@@ -40,13 +40,49 @@ func (r *Router) FindRoute(req *http.Request) (*Route, bool) {
 func BuildRoutes(cfgRoutes []config.Route) []Route {
 	routes := make([]Route, 0, len(cfgRoutes))
 
-	for i := 0; i < len(cfgRoutes); i++ {
+	for i := range cfgRoutes {
 		routes = append(routes, Route{
 			Path:        cfgRoutes[i].Path,
 			ServiceName: cfgRoutes[i].ServiceName,
 			Methods:     cfgRoutes[i].Methods,
 			Middlewares: cfgRoutes[i].Middlewares,
+			Resilience:  buildResiliency(cfgRoutes[i].Resilience),
 		})
 	}
 	return routes
+}
+
+func buildResiliency(r config.Resilience) Resilience {
+	p := Resilience{
+		Timeout:      time.Duration(r.TimeoutMs) * time.Microsecond,
+		RetryCount:   r.RetryCount,
+		RetryBackoff: time.Duration(r.RetryBackoffMs) * time.Millisecond,
+	}
+
+	if r.RateLimit != nil {
+		p.RateLimiter = &RateLimiter{
+			RequestPerSecond: r.RateLimit.RequestPerSecond,
+			Burst:            r.RateLimit.Burst,
+			Per:              parseRateLimitScope(r.RateLimit.Per),
+		}
+	}
+
+	if r.CircuitBreaker != nil {
+		p.CircuitBreaker = &CircuitBreaker{
+			FailureThreshold: r.CircuitBreaker.FailureThreshold,
+			RecoveryTimeout:  time.Duration(r.CircuitBreaker.RecoveryTimeoutMs) * time.Millisecond,
+		}
+	}
+	return p
+}
+
+func parseRateLimitScope(s string) RateLimitScope {
+	switch s {
+	case "user":
+		return RateLimit_User
+	case "api-key":
+		return RateLimit_APIKey
+	default:
+		return RateLimit_IP
+	}
 }
