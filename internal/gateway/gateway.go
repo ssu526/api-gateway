@@ -2,34 +2,31 @@ package gateway
 
 import (
 	"net/http"
-	"time"
+
+	"github.com/ssu526/api-gateway/internal/domain/proxy"
+	"github.com/ssu526/api-gateway/internal/domain/route"
+	"github.com/ssu526/api-gateway/internal/domain/service"
 )
 
 type Gateway struct {
 	Port            string
-	ReadTimeoutMs   time.Duration
-	WriteTimeoutMs  time.Duration
-	IdleTimeoutMs   time.Duration
+	ReadTimeoutMs   int
+	WriteTimeoutMs  int
+	IdleTimeoutMs   int
 	MaxHeaderBytes  int
-	Router          Router
-	ServiceRegistry ServiceRegistry
-	Proxy           Proxy
+	Router          route.Router
+	ServiceRegistry service.ServiceRegistry
+	Proxy           proxy.ReverseProxy
 }
 
-func New(port string,
-	readTimeoutMs time.Duration,
-	writeTimeoutMs time.Duration,
-	idleTimeoutMs time.Duration,
-	maxHeaderBytes int,
-	router Router,
-	serviceRegistry ServiceRegistry,
-	proxy Proxy) *Gateway {
+func NewGateway(
+	port string,
+	router route.Router,
+	serviceRegistry service.ServiceRegistry,
+	proxy proxy.ReverseProxy,
+) *Gateway {
 	return &Gateway{
 		Port:            port,
-		ReadTimeoutMs:   readTimeoutMs,
-		WriteTimeoutMs:  writeTimeoutMs,
-		IdleTimeoutMs:   idleTimeoutMs,
-		MaxHeaderBytes:  maxHeaderBytes,
 		Router:          router,
 		ServiceRegistry: serviceRegistry,
 		Proxy:           proxy,
@@ -50,15 +47,10 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(svc.Urls) == 0 {
+	if len(svc.Instances) == 0 {
 		http.Error(w, "No upstream targets available", http.StatusBadGateway)
 	}
 
-	upstream := svc.Urls[0]
-	err = g.Proxy.Forward(w, r, upstream)
-
-	if err != nil {
-		http.Error(w, "upstream error", http.StatusBadGateway)
-		return
-	}
+	upstream := svc.Instances[0].URL
+	g.Proxy.Forward(w, r, upstream)
 }

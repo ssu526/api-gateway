@@ -20,11 +20,11 @@ router:
 
 service-registry:
   services:
-    - service: "user-service"
+    - name: "user-service"
       urls:
         - "http://localhost:9091"
         - "http://localhost:9092"
-    - service: "product-service"
+    - name: "product-service"
       urls:
         - "http://localhost:9093"
         - "http://localhost:9094"
