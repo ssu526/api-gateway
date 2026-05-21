@@ -6,6 +6,7 @@ import (
 	"github.com/ssu526/api-gateway/internal/domain/proxy"
 	"github.com/ssu526/api-gateway/internal/domain/route"
 	"github.com/ssu526/api-gateway/internal/domain/service"
+	"github.com/ssu526/api-gateway/internal/infrastructure/loadBalancer"
 )
 
 type Gateway struct {
@@ -49,8 +50,28 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if len(svc.Instances) == 0 {
 		http.Error(w, "No upstream targets available", http.StatusBadGateway)
+		return
 	}
 
-	upstream := svc.Instances[0].URL
+	peers := make([]loadBalancer.Peer, len(svc.Instances))
+	for i, inst := range svc.Instances {
+		peers[i] = inst
+	}
+
+	peer, err := svc.LoadBalancer.Next(peers)
+	if err != nil {
+		http.Error(w, "no upstream targets available", http.StatusBadGateway)
+	}
+
+	inst, ok := peer.(*service.Instance)
+	if !ok {
+		http.Error(w, "Internal gateway configuration error", http.StatusInternalServerError)
+		return
+	}
+
+	inst.State.ActiveConn.Add(1)
+	defer inst.State.ActiveConn.Add(-1)
+
+	upstream := inst.URL
 	g.Proxy.Forward(w, r, upstream)
 }

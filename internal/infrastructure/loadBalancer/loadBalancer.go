@@ -1,7 +1,10 @@
 package loadBalancer
 
-import "github.com/ssu526/api-gateway/internal/domain/service"
+type Peer interface {
+	IsHealthy() bool
+	GetActiveConnections() int64
+}
 
 type LoadBalancer interface {
-	Next(service []*service.Instance) (*service.Instance, error)
+	Next(instances []Peer) (Peer, error)
 }

@@ -70,7 +70,7 @@ func (s *Services) GetService(serviceName string) (*Service, error) {
 	}
 
 	name := service.Name
-	strategy := service.LbStrategy
+	strategy := service.LoadBalancer
 	healthCheckPath := service.HealthCheckPath
 	healthCheckInterval := service.HealthCheckInterval
 
@@ -79,7 +79,7 @@ func (s *Services) GetService(serviceName string) (*Service, error) {
 	cp := &Service{
 		Name:                name,
 		Instances:           instances, // Bind our newly isolated slice array
-		LbStrategy:          strategy,
+		LoadBalancer:        strategy,
 		HealthCheckPath:     healthCheckPath,
 		HealthCheckInterval: healthCheckInterval,
 	}

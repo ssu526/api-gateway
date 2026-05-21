@@ -1,9 +1,14 @@
 package loadBalancer
 
-// func NewLoadBalancer(strategy string) LoadBalancer {
-// 	if strategy == "least-connection" {
-// 		return NewLeastConnection()
-// 	} else {
-// 		return NewRoundRobin()
-// 	}
-// }
+const (
+	LbRoundRobin = "round-robin"
+	LbLeastConn  = "least-conn"
+)
+
+func NewLoadBalancer(strategy string) LoadBalancer {
+	if strategy == LbLeastConn {
+		return NewLeastConnection()
+	} else {
+		return NewRoundRobin()
+	}
+}

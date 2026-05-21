@@ -1,21 +1,13 @@
 package service
 
 import (
-	"errors"
 	"fmt"
 	"sync/atomic"
 	"time"
-)
 
-const (
-	LbRoundRobin = "round-robin"
-	LbLeastConn  = "least-conn"
+	"github.com/ssu526/api-gateway/internal/err"
+	"github.com/ssu526/api-gateway/internal/infrastructure/loadBalancer"
 )
-
-var validStrategies = map[string]bool{
-	LbRoundRobin: true,
-	LbLeastConn:  true,
-}
 
 type Instance struct {
 	URL   string
@@ -27,17 +19,31 @@ type InstanceState struct {
 	ActiveConn atomic.Int64
 }
 
+func (i *Instance) IsHealthy() bool {
+	if i == nil || i.State == nil {
+		return false
+	}
+	return i.State.Healthy.Load()
+}
+
+func (i *Instance) GetActiveConnections() int64 {
+	if i == nil || i.State == nil {
+		return 0
+	}
+	return i.State.ActiveConn.Load()
+}
+
 type Service struct {
 	Name                string
 	Instances           []*Instance
-	LbStrategy          string
+	LoadBalancer        loadBalancer.LoadBalancer
 	HealthCheckPath     string
 	HealthCheckInterval time.Duration
 }
 
 func (s *Service) validate() error {
 	if s.Name == "" {
-		return errors.New("service name must not be empty")
+		return err.ErrEmptyServerName
 	}
 
 	if len(s.Instances) == 0 {
@@ -48,14 +54,6 @@ func (s *Service) validate() error {
 		if inst == nil || inst.URL == "" {
 			return fmt.Errorf("service %q: instance %d has an empty URL", s.Name, i)
 		}
-	}
-
-	if s.LbStrategy != "" {
-		s.LbStrategy = LbRoundRobin
-	}
-
-	if !validStrategies[s.LbStrategy] {
-		return fmt.Errorf("service %q: unknown LB strategy %q", s.Name, s.LbStrategy)
 	}
 
 	return nil

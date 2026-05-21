@@ -9,6 +9,7 @@ import (
 	"github.com/ssu526/api-gateway/internal/domain/route"
 	"github.com/ssu526/api-gateway/internal/domain/service"
 	"github.com/ssu526/api-gateway/internal/gateway"
+	"github.com/ssu526/api-gateway/internal/infrastructure/loadBalancer"
 )
 
 func main() {
@@ -45,7 +46,7 @@ func main() {
 		svc := &service.Service{
 			Name:                svcCfg.Name,
 			Instances:           instances,
-			LbStrategy:          svcCfg.LbStrategy,
+			LoadBalancer:        loadBalancer.NewLoadBalancer(svcCfg.LbStrategy),
 			HealthCheckPath:     svcCfg.HealthCheckPath,
 			HealthCheckInterval: svcCfg.HealthCheckInterval,
 		}
